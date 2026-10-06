@@ -38,6 +38,8 @@ Terrain:FillBlock(CFrame.new(0, -8, (Layout.PlazaRadius + Layout.Biomes[1].zStar
 local function scatter(info, n: number, fn, rng: Random, minX: number?, maxX: number?)
 	minX = minX or Layout.PathWidth / 2 + 6
 	maxX = maxX or info.halfWidth - 6
+	-- counts are tuned for a ~280-stud biome; longer biomes get proportionally more
+	n = math.floor(n * math.max(1, (info.zEnd - info.zStart) / 280) + 0.5)
 	for _ = 1, n do
 		local side = rng:NextNumber() < 0.5 and -1 or 1
 		local x = side * rng:NextNumber(minX, maxX)
@@ -145,7 +147,39 @@ biomeBuilders[4] = function(info, f, rng)
 	for _, side in ipairs({ -1, 1 }) do
 		local base = Vector3.new(side * (info.halfWidth + 40), -10, info.zStart + 200)
 		Terrain:FillBall(base, 60, M.Basalt)
-		P("Cylinder", Vector3.new(1, 30, 30), CFrame.new(base + Vector3.new(0, 49, 0)) * CFrame.Angles(0, 0, rad(90)), rgb(255, 100, 30), "Neon", f, { collide = false })
+		local crater = P("Cylinder", Vector3.new(1, 30, 30), CFrame.new(base + Vector3.new(0, 49, 0)) * CFrame.Angles(0, 0, rad(90)), rgb(255, 100, 30), "Neon", f, { collide = false })
+		local smoke = Instance.new("ParticleEmitter")
+		smoke.Texture = "rbxasset://textures/particles/smoke_main.dds"
+		smoke.Color = ColorSequence.new(rgb(70, 60, 60))
+		smoke.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 12), NumberSequenceKeypoint.new(1, 40) })
+		smoke.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.4), NumberSequenceKeypoint.new(1, 1) })
+		smoke.Lifetime = NumberRange.new(6, 9)
+		smoke.Speed = NumberRange.new(8, 14)
+		smoke.Rate = 4
+		smoke.SpreadAngle = Vector2.new(15, 15)
+		smoke.EmissionDirection = Enum.NormalId.Right
+		smoke.LightInfluence = 0.3
+		smoke.Parent = crater
+	end
+	-- spiky basalt shards
+	scatter(info, 14, function(p)
+		local h = rng:NextNumber(8, 18)
+		P("Cone", Vector3.new(h * 0.35, h, h * 0.35), CFrame.new(p + Vector3.new(0, h / 2 - 1, 0)) * CFrame.Angles(rng:NextNumber(-0.2, 0.2), 0, rng:NextNumber(-0.2, 0.2)), rgb(40, 32, 32), "Basalt", f)
+	end, rng)
+	-- glowing lava rivers running alongside the road
+	for _, side in ipairs({ -1, 1 }) do
+		local z = info.zStart + 30
+		while z < info.zEnd - 60 do
+			local len = rng:NextNumber(40, 80)
+			local x = side * rng:NextNumber(36, 44)
+			local seg = deco("Block", Vector3.new(rng:NextNumber(5, 8), 0.4, len), CFrame.new(x, 0.15, z + len / 2) * CFrame.Angles(0, rng:NextNumber(-0.15, 0.15), 0), rgb(255, 100, 20), "Neon", f, { shadow = false })
+			local l = Instance.new("PointLight")
+			l.Color = rgb(255, 110, 40)
+			l.Range = 18
+			l.Brightness = 1.5
+			l.Parent = seg
+			z += len + rng:NextNumber(20, 60)
+		end
 	end
 	nest(info, f, rng, rgb(50, 40, 38), rgb(140, 80, 50))
 	lair(info, f, rgb(60, 48, 46), M.Basalt)
@@ -167,6 +201,14 @@ biomeBuilders[5] = function(info, f, rng)
 		l.Parent = orb
 	end, rng)
 	scatter(info, 18, function(p) Props.rock(p, rng:NextNumber(4, 9), f, rgb(100, 105, 125), nil, rng) end, rng)
+	-- storm clouds hanging over the cliffs
+	for k = 1, math.floor((info.zEnd - info.zStart) / 70) do
+		local c = Vector3.new(rng:NextNumber(-info.halfWidth, info.halfWidth), rng:NextNumber(55, 80), info.zStart + k * 70)
+		for _ = 1, 5 do
+			local r = rng:NextNumber(14, 26)
+			deco("Ellipsoid", Vector3.new(r * 1.7, r * 0.55, r * 1.2), CFrame.new(c + Vector3.new(rng:NextNumber(-20, 20), rng:NextNumber(-2, 2), rng:NextNumber(-12, 12))), rgb(150, 155, 175), "SmoothPlastic", f, { shadow = false, alpha = 0.1 })
+		end
+	end
 	nest(info, f, rng, rgb(80, 80, 95), rgb(200, 200, 215))
 	lair(info, f, rgb(100, 104, 124), M.Rock)
 end
@@ -188,6 +230,9 @@ biomeBuilders[6] = function(info, f, rng)
 			l.Parent = c
 		end
 	end
+	scatter(info, 10, function(p, side)
+		Props.crystal(Vector3.new(side * rng:NextNumber(30, 36), 0, p.Z), rng:NextNumber(14, 26), f, cols[rng:NextInteger(1, #cols)], rng, true)
+	end, rng)
 	nest(info, f, rng, rgb(140, 110, 190), rgb(230, 210, 255))
 	lair(info, f, rgb(170, 140, 220), M.Salt)
 end
@@ -213,6 +258,16 @@ biomeBuilders[7] = function(info, f, rng)
 		l.Range = 14
 		l.Parent = w
 	end, rng)
+	scatter(info, 22, function(p)
+		local h = rng:NextNumber(3, 5)
+		P("Block", Vector3.new(h * 0.7, h, 0.8), CFrame.new(p + Vector3.new(0, h / 2, 0)) * CFrame.Angles(rng:NextNumber(-0.15, 0.15), rng:NextNumber(-0.4, 0.4), rng:NextNumber(-0.12, 0.12)), rgb(90, 85, 105), "Slate", f)
+		P("Cylinder", Vector3.new(0.8, h * 0.7, h * 0.7), CFrame.new(p + Vector3.new(0, h, 0)) * CFrame.Angles(0, rng:NextNumber(-0.4, 0.4), 0) * CFrame.Angles(0, rad(90), 0), rgb(90, 85, 105), "Slate", f)
+	end, rng, 26, 60)
+	for k = 1, math.floor((info.zEnd - info.zStart) / 60) do
+		for _, side in ipairs({ -1, 1 }) do
+			Props.lamp(Vector3.new(side * 31, 0, info.zStart + k * 60), f, rgb(190, 120, 255))
+		end
+	end
 	nest(info, f, rng, rgb(35, 28, 45), rgb(90, 60, 120))
 	lair(info, f, rgb(50, 38, 70), M.Slate)
 end
@@ -232,6 +287,20 @@ biomeBuilders[8] = function(info, f, rng)
 		local side = k % 2 == 0 and -1 or 1
 		local pl = deco("Ball", Vector3.new(60, 60, 60), CFrame.new(side * (info.halfWidth + 90), 90 + k * 20, info.zStart + k * 300), ({ rgb(255, 150, 90), rgb(120, 200, 255), rgb(200, 140, 255) })[k], "SmoothPlastic", f)
 		deco("Ring", Vector3.new(1, 100, 100), pl.CFrame * CFrame.Angles(0.3, 0, rad(90) + 0.4), rgb(255, 240, 200), "SmoothPlastic", f, { alpha = 0.3 })
+	end
+	scatter(info, 8, function(p)
+		local r = rng:NextNumber(8, 14)
+		P("Ring", Vector3.new(1.4, r * 2, r * 2), CFrame.new(p + Vector3.new(0, 0.4, 0)) * CFrame.Angles(0, 0, rad(90)), rgb(60, 60, 110), "Slate", f, { collide = false })
+		local rock = P("Ball", Vector3.new(r * 0.5, r * 0.5, r * 0.5), CFrame.new(p + Vector3.new(0, r * 0.12, 0)), rgb(255, 150, 70), "Neon", f)
+		local l = Instance.new("PointLight")
+		l.Color = rgb(255, 160, 80)
+		l.Range = 16
+		l.Parent = rock
+	end, rng)
+	for k = 1, math.floor((info.zEnd - info.zStart) / 70) do
+		for _, side in ipairs({ -1, 1 }) do
+			Props.lamp(Vector3.new(side * 31, 0, info.zStart + k * 70), f, rgb(255, 235, 150))
+		end
 	end
 	nest(info, f, rng, rgb(70, 70, 130), rgb(140, 160, 255))
 	lair(info, f, rgb(50, 55, 110), M.Asphalt)

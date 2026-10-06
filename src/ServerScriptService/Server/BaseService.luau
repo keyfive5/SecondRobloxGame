@@ -303,7 +303,7 @@ function BaseService.takePad(player: Player, n: number)
 	return rec
 end
 
-function BaseService.collect(player: Player, n: number): number
+function BaseService.collect(player: Player, n: number, silent: boolean?): number
 	local data = dataOf(player)
 	local rec = data and data.pads[tostring(n)]
 	if not rec or rec.k ~= "dragon" then
@@ -322,15 +322,17 @@ function BaseService.collect(player: Player, n: number): number
 	rec.t = t
 	Economy.addCash(player, amount)
 	replicatePad(player, n)
-	fxEvent:FireClient(player, slot, n, "collect", amount)
+	if not silent then
+		fxEvent:FireClient(player, slot, n, "collect", amount)
+	end
 	Signals.progress(player, "collect", amount)
 	return amount
 end
 
-function BaseService.collectAll(player: Player): number
+function BaseService.collectAll(player: Player, silent: boolean?): number
 	local total = 0
 	for n = 1, Layout.MaxPads do
-		total += BaseService.collect(player, n)
+		total += BaseService.collect(player, n, silent)
 	end
 	return total
 end
@@ -672,7 +674,10 @@ function BaseService.start()
 					BaseService.rebase(player)
 				end
 				if hasPass(player, "AutoCollect") then
-					BaseService.collectAll(player)
+					local got = BaseService.collectAll(player, true)
+					if got > 0 then
+						fxEvent:FireClient(player, slotOf[player], 0, "autocollect", got)
+					end
 				end
 			end
 		end

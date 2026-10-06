@@ -193,15 +193,32 @@ function MonetizationService.start()
 		pending[player] = nil
 	end)
 
-	NestService.BuyRequested:Connect(function(player, egg)
-		local product = Products.eggProduct(egg.r)
-		if not product or product.id == 0 then
-			Sync.notify(player, "Buying eggs isn't available yet!", "info")
-			return
+	-- "Buy Safely" on a nest egg: the client has already shown the odds.
+	-- Paid random items are hidden where local policy restricts them.
+	local PolicyService = game:GetService("PolicyService")
+	Net.func("BuyEgg").OnServerInvoke = function(player, biome, slot)
+		if type(biome) ~= "number" or type(slot) ~= "number" then
+			return false
 		end
-		pending[player] = { kind = "egg", b = egg.b, r = egg.r, slot = egg.slot }
+		local ok, policy = pcall(PolicyService.GetPolicyInfoForPlayerAsync, PolicyService, player)
+		if ok and policy and policy.ArePaidRandomItemsRestricted then
+			Sync.notify(player, "Buying eggs isn't available in your region.", "info")
+			return false
+		end
+		local rarity, pos = NestService.eggAt(biome, slot)
+		local char = player.Character
+		local hrp = char and char:FindFirstChild("HumanoidRootPart")
+		if not rarity or not hrp or (hrp.Position - pos).Magnitude > 30 then
+			return false
+		end
+		local product = Products.eggProduct(rarity)
+		if not product or product.id == 0 then
+			return false
+		end
+		pending[player] = { kind = "egg", b = biome, r = rarity, slot = slot }
 		MarketplaceService:PromptProductPurchase(player, product.id)
-	end)
+		return true
+	end
 
 	Net.func("RequestHatchNow").OnServerInvoke = function(player, n)
 		if type(n) ~= "number" then

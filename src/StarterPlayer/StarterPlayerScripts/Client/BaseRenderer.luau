@@ -475,6 +475,10 @@ local function onFx(slot: number, n: number, kind: string, extra)
 		if onScreen then
 			Notify.float("+" .. Format.cash(extra or 0), Color3.fromRGB(255, 225, 80), Vector2.new(sp.X, sp.Y))
 		end
+	elseif kind == "autocollect" and slot == mySlot() then
+		-- one quiet tick under the cash counter (Auto Collect pass)
+		local cam = workspace.CurrentCamera
+		Notify.float("+" .. Format.cash(extra or 0), Color3.fromRGB(160, 255, 160), Vector2.new(cam.ViewportSize.X / 2 + 150, 120))
 	elseif kind == "sell" then
 		burst(Layout.padCFrame(slot, n).Position + Vector3.new(0, 2, 0), Color3.fromRGB(255, 220, 90), 20, 0.5)
 	elseif kind == "place" and slot == mySlot() then

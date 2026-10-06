@@ -58,8 +58,8 @@ local function buildCard()
 	card = Theme.card({
 		Name = "Tutorial",
 		Size = UDim2.fromOffset(520, 64),
-		Position = UDim2.new(0.5, 0, 0, 210),
-		AnchorPoint = Vector2.new(0.5, 0),
+		Position = UDim2.new(0.5, 0, 1, -150),
+		AnchorPoint = Vector2.new(0.5, 1),
 		Color = Color3.new(1, 1, 1),
 		Gradient = { Color3.fromRGB(255, 210, 90), Color3.fromRGB(230, 130, 40), 90 },
 		StrokeColor = Color3.fromRGB(90, 40, 10),

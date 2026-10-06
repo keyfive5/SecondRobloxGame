@@ -33,8 +33,6 @@ local secretEgg = nil -- { biome, model }
 local groundEggs = {} -- [model] = { b, r, zone, expires, slot }
 local guardians = {} -- [biome] = state
 
-local buyRequested = Instance.new("BindableEvent")
-NestService.BuyRequested = buyRequested.Event -- (player, egg = { b, r, zone, slot })
 
 local roarEvent = Net.event("GuardianRoar")
 local knockEvent = Net.event("Knockback")
@@ -102,7 +100,9 @@ local function billboard(model: Model, text: string, color: Color3, height: numb
 	return bb
 end
 
-local function eggPrompts(model: Model, rarity: string, onGrab, onBuy)
+-- buyInfo = { biome, slot } adds a "Buy Safely" prompt; the client shows the odds
+-- first and then asks the server (MonetizationService "BuyEgg") to prompt.
+local function eggPrompts(model: Model, rarity: string, onGrab, buyInfo)
 	local shell = model.PrimaryPart
 	local att = Instance.new("Attachment")
 	att.Parent = shell
@@ -118,7 +118,7 @@ local function eggPrompts(model: Model, rarity: string, onGrab, onBuy)
 	grab.Parent = att
 	grab.Triggered:Connect(onGrab)
 	local product = Products.eggProduct(rarity)
-	if onBuy and product and product.id ~= 0 then
+	if buyInfo and product and product.id ~= 0 then
 		local att2 = Instance.new("Attachment")
 		att2.Position = Vector3.new(0, -1.2, 0)
 		att2.Parent = shell
@@ -133,7 +133,8 @@ local function eggPrompts(model: Model, rarity: string, onGrab, onBuy)
 		buy.RequiresLineOfSight = false
 		buy.Parent = att2
 		buy:SetAttribute("EggBuy", rarity)
-		buy.Triggered:Connect(onBuy)
+		buy:SetAttribute("EggBiome", buyInfo.biome)
+		buy:SetAttribute("EggSlot", buyInfo.slot)
 	end
 end
 
@@ -187,14 +188,19 @@ function spawnEgg(biome: number, slot: number, rarity: string?)
 	billboard(model, rarity .. " Egg", Rarity.color(rarity), 3.2)
 	eggPrompts(model, rarity, function(player)
 		grabFromNest(player, biome, slot)
-	end, function(player)
-		local e = nest[slot]
-		if e and e.model then
-			buyRequested:Fire(player, { b = biome, r = rarity, zone = biome, slot = slot })
-		end
-	end)
+	end, { biome = biome, slot = slot })
 	model.Parent = eggFolder
 	nest[slot] = { model = model, rarity = rarity, respawnAt = nil }
+end
+
+-- Rarity of the egg sitting in a nest slot (nil if taken), and where it is.
+function NestService.eggAt(biome: number, slot: number): (string?, Vector3?)
+	local nest = nests[biome]
+	local e = nest and nest[slot]
+	if e and e.model and e.model.PrimaryPart then
+		return e.rarity, e.model.PrimaryPart.Position
+	end
+	return nil, nil
 end
 
 -- Called by MonetizationService after a "Buy Safely" receipt.

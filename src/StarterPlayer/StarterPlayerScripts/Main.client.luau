@@ -18,7 +18,7 @@ local modules = {
 	Client.WorldFX,
 	Client.Interactions,
 }
-for _, name in ipairs({ "StorePanel", "MiscPanels", "QuestPanel", "HatchReveal" }) do
+for _, name in ipairs({ "StorePanel", "MiscPanels", "QuestPanel", "HatchReveal", "EggOddsPanel" }) do
 	if UI:FindFirstChild(name) then
 		table.insert(modules, UI[name])
 	end

@@ -165,9 +165,13 @@ local function applyZone(zone: number)
 		TweenService:Create(cc, info, { TintColor = tint, Saturation = a.sat }):Play()
 	end
 	TweenService:Create(Lighting, info, { OutdoorAmbient = a.ambient, ClockTime = a.clock }):Play()
-	if zone > 0 then
+	if zone > 0 and (zone > (WorldFX.lastBannerZone or 0) or os.clock() - (WorldFX.lastBannerAt or 0) > 25) then
+		WorldFX.lastBannerZone = zone
+		WorldFX.lastBannerAt = os.clock()
 		local b = Biomes.List[zone]
 		Notify.big(string.upper(b.name), "⚡ Speed " .. b.speed .. " to escape " .. b.guardian, b.color:Lerp(rgb(255, 255, 255), 0.3))
+	elseif zone == 0 then
+		WorldFX.lastBannerZone = 0
 	end
 end
 
@@ -266,7 +270,126 @@ local function animateIdle()
 	end
 end
 
+---------------------------------------------------------------------------
+-- Ambience: a box of particles that follows the camera, themed per zone,
+-- plus lightning flashes over Thunder Cliffs.
+---------------------------------------------------------------------------
+local ambBox = Instance.new("Part")
+ambBox.Name = "Ambience"
+ambBox.Anchored = true
+ambBox.CanCollide = false
+ambBox.CanQuery = false
+ambBox.CanTouch = false
+ambBox.Transparency = 1
+ambBox.Size = Vector3.new(120, 1, 120)
+ambBox.Parent = workspace
+local ambEmitters = {}
+local SPARK = Effects.Textures.SPARKLE
+local AMB = {
+	[1] = { texture = SPARK, color = rgb(255, 250, 200), size = 0.25, rate = 6, speed = { 0.5, 1.5 }, accel = Vector3.new(0, 0.6, 0), life = { 4, 7 }, light = 1 }, -- fireflies
+	[2] = { texture = Effects.Textures.SMOKE, color = rgb(240, 210, 150), size = 2.5, rate = 10, speed = { 6, 10 }, accel = Vector3.new(4, -0.5, 0), life = { 3, 5 }, light = 0, alpha = 0.75 }, -- blowing sand
+	[3] = { texture = SPARK, color = rgb(255, 255, 255), size = 0.35, rate = 60, speed = { 2, 4 }, accel = Vector3.new(1, -5, 0), life = { 5, 8 }, light = 0.4 }, -- snow
+	[4] = { texture = Effects.Textures.SPARKS, color = rgb(255, 130, 40), size = 0.3, rate = 30, speed = { 1, 3 }, accel = Vector3.new(0, 3, 0), life = { 3, 6 }, light = 1, up = true }, -- embers
+	[5] = { texture = SPARK, color = rgb(190, 210, 255), size = 0.15, rate = 120, speed = { 50, 60 }, accel = Vector3.new(0, -30, 0), life = { 1, 1.4 }, light = 0.2, streak = true }, -- rain
+	[6] = { texture = SPARK, color = rgb(230, 170, 255), size = 0.3, rate = 25, speed = { 0.5, 1.5 }, accel = Vector3.zero, life = { 3, 6 }, light = 1 }, -- crystal motes
+	[7] = { texture = Effects.Textures.GLOW, color = rgb(150, 90, 230), size = 1.6, rate = 10, speed = { 0.5, 1.5 }, accel = Vector3.new(0, 0.5, 0), life = { 4, 7 }, light = 0.6, alpha = 0.6 }, -- wisps
+	[8] = { texture = SPARK, color = rgb(255, 255, 220), size = 0.5, rate = 14, speed = { 40, 60 }, accel = Vector3.zero, life = { 0.8, 1.2 }, light = 1, streak = true, diag = true }, -- shooting stars
+}
+local function setAmbience(zone: number)
+	for _, e in ipairs(ambEmitters) do
+		e:Destroy()
+	end
+	ambEmitters = {}
+	local a = AMB[zone]
+	if not a then
+		return
+	end
+	local e = Effects.emitter(ambBox, {
+		texture = a.texture,
+		rate = a.rate,
+		color = a.color,
+		size = NumberSequence.new(a.size),
+		speed = NumberRange.new(a.speed[1], a.speed[2]),
+		accel = a.accel,
+		lifetime = NumberRange.new(a.life[1], a.life[2]),
+		light = a.light,
+		spread = a.streak and Vector2.new(5, 5) or Vector2.new(180, 180),
+		transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(0.15, a.alpha or 0.15), NumberSequenceKeypoint.new(0.85, a.alpha or 0.15), NumberSequenceKeypoint.new(1, 1) }),
+		dir = a.up and Enum.NormalId.Top or Enum.NormalId.Bottom,
+	})
+	if a.streak then
+		e.Orientation = Enum.ParticleOrientation.VelocityParallel
+		e.Size = NumberSequence.new(a.size * 3)
+		e.Squash = NumberSequence.new(-2.5)
+	end
+	table.insert(ambEmitters, e)
+end
+
+local lastFlash = 0
+local function lightningFlash()
+	local cc = Lighting:FindFirstChildOfClass("ColorCorrectionEffect")
+	if not cc then
+		return
+	end
+	local b = cc.Brightness
+	cc.Brightness = b + 0.45
+	TweenService:Create(cc, TweenInfo.new(0.35), { Brightness = b }):Play()
+	task.delay(0.6, function()
+		local s = Instance.new("Sound")
+		s.SoundId = "rbxasset://sounds/impact_explosion_03.mp3"
+		s.Volume = 0.18
+		s.PlaybackSpeed = 0.5
+		s.Parent = workspace.CurrentCamera
+		s:Play()
+		task.delay(3, function()
+			s:Destroy()
+		end)
+	end)
+end
+
+-- Someone is carrying loot out of your base: red pulses + banner.
+local function onAlarm(thiefId: number)
+	local thief = Players:GetPlayerByUserId(thiefId)
+	Notify.big("🚨 THIEF IN YOUR BASE!", (thief and thief.DisplayName or "Someone") .. " is stealing — slap them!", rgb(255, 70, 60))
+	local cc = Lighting:FindFirstChildOfClass("ColorCorrectionEffect")
+	if not cc then
+		return
+	end
+	task.spawn(function()
+		for _ = 1, 3 do
+			local base = cc.TintColor
+			cc.TintColor = base:Lerp(rgb(255, 90, 90), 0.6)
+			TweenService:Create(cc, TweenInfo.new(0.45), { TintColor = base }):Play()
+			task.wait(0.55)
+		end
+	end)
+end
+
 function WorldFX.start()
+	Net.event("Alarm").OnClientEvent:Connect(onAlarm)
+	local ambZone = -1
+	RunService.Heartbeat:Connect(function()
+		local cam = workspace.CurrentCamera
+		local p = cam.CFrame.Position
+		local char = player.Character
+		local hrp = char and char:FindFirstChild("HumanoidRootPart")
+		local zone = hrp and Layout.biomeAt(hrp.Position) or 0
+		if zone ~= ambZone then
+			ambZone = zone
+			setAmbience(zone)
+		end
+		local a = AMB[zone]
+		local height = (a and a.up) and -8 or 40
+		if a and a.diag then
+			ambBox.CFrame = CFrame.new(p + Vector3.new(-40, 70, 0)) * CFrame.Angles(0, 0, math.rad(-60))
+		else
+			ambBox.CFrame = CFrame.new(p + Vector3.new(0, height, 0))
+		end
+		if zone == 5 and os.clock() - lastFlash > 7 and math.random() < 0.004 then
+			lastFlash = os.clock()
+			lightningFlash()
+		end
+	end)
 	Net.event("GuardianRoar").OnClientEvent:Connect(onRoar)
 	Net.event("Meteor").OnClientEvent:Connect(onMeteor)
 	RunService.RenderStepped:Connect(function()

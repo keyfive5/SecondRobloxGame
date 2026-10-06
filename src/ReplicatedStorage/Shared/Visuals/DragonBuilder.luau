@@ -77,8 +77,8 @@ function Builder:add(group: string, shape: string, size: Vector3, cf: CFrame, co
 	if opts.role then
 		p:SetAttribute("Role", opts.role)
 	end
-	if opts.noShadow then
-		p.CastShadow = false
+	if opts.noShadow or size.Magnitude * self.s < 1.1 then
+		p.CastShadow = false -- tiny details: shadows cost more than they add
 	end
 	p.Parent = self.model
 	local g = self.groups[group]
