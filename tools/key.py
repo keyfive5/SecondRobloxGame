@@ -17,6 +17,7 @@ def key(src: str, dst: str, pad: float = 0.06):
     t0, t1 = 70.0, 150.0
     alpha = np.clip((d - t0) / (t1 - t0), 0, 1)
     alpha = np.where(mag > 200, 0, alpha)
+    alpha = np.where(alpha < 0.12, 0, alpha)  # kill faint noise (shows up as boxes when blurred into glows)
     # despill: remove the backdrop's contribution from semi-transparent edges
     a3 = alpha[..., None]
     with np.errstate(divide='ignore', invalid='ignore'):

@@ -112,6 +112,9 @@ local function loadFromStore(player: Player)
 		if ok and result and not locked then
 			return result
 		end
+		if not ok and RunService:IsStudio() and tostring(result):find("StudioAccessToApisNotAllowed") then
+			return nil, "nostore" -- API access is off for Studio: play with temporary data
+		end
 		if not player.Parent then
 			return nil, "left"
 		end

@@ -80,7 +80,9 @@ end
 ---------------------------------------------------------------------------
 Layout.GuardWake = 1.0
 Layout.GuardCatch = 14 -- horizontal distance from the guardian's root
-Layout.GuardLeeway = 0.93
+-- < 1 slows the guardian below the exact-escape speed; early biomes are forgiving
+Layout.GuardLeeway = { 0.8, 0.88, 0.92 }
+Layout.GuardLeewayDefault = 0.94
 
 Layout.Biomes = {}
 local z = Layout.GateZ + 20
@@ -89,7 +91,7 @@ for i, b in ipairs(Biomes.List) do
 	local P = S * Config.CarryEggMult
 	local reach = math.floor(6.5 * S + 40)
 	local rest = math.floor(30 + 0.8 * S)
-	local G = P * (rest - Layout.GuardCatch + reach) / (reach - P * Layout.GuardWake) * Layout.GuardLeeway
+	local G = P * (rest - Layout.GuardCatch + reach) / (reach - P * Layout.GuardWake) * (Layout.GuardLeeway[i] or Layout.GuardLeewayDefault)
 	local length = reach + rest + 70
 	local info = {
 		index = i,

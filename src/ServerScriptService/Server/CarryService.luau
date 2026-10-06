@@ -81,7 +81,7 @@ local function attachVisual(player: Player, c)
 	else
 		local b = c.b or (c.rec and c.rec.b) or 1
 		local r = c.r or (c.rec and c.rec.r) or "Common"
-		model = EggBuilder.build(b, r, origin, { scale = 0.75, anchored = false })
+		model = EggBuilder.build(b, r, origin, { scale = 1.15, anchored = false })
 		primary = model.PrimaryPart
 	end
 	model.Name = "CarriedItem"
@@ -89,7 +89,7 @@ local function attachVisual(player: Player, c)
 	local w = Instance.new("Weld")
 	w.Part0 = hrp
 	w.Part1 = primary
-	local lift = c.kind == "dragon" and 3.2 or 4.6
+	local lift = c.kind == "dragon" and 2.9 or 4.1
 	w.C0 = CFrame.new(0, lift, 0.4) * CFrame.Angles(0, math.pi, 0)
 	w.Parent = primary
 	model.Parent = char
