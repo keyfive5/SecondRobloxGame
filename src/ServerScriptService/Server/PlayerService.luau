@@ -126,7 +126,12 @@ end
 function PlayerService.start()
 	DataService.Loaded:Connect(function(player, profile)
 		makeLeaderstats(player, profile.data)
-		Sync.full(player, profile.data)
+		-- full snapshot once every Loaded handler has had its synchronous turn
+		task.defer(function()
+			if player.Parent then
+				Sync.full(player, profile.data)
+			end
+		end)
 		if player.Character then
 			onCharacter(player, player.Character)
 		end

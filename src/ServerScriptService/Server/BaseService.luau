@@ -403,6 +403,7 @@ function BaseService.hatch(player: Player, n: number, force: boolean?): boolean
 	local d = rollDragon(player, rec)
 	local _, isNew = BaseService.placeDragon(player, d, n)
 	data.stats.hatched += 1
+	Sync.set(player, "stats", data.stats)
 	local sp = Species.get(d.sp)
 	fxEvent:FireAllClients(slot, n, "hatch", d)
 	Signals.progress(player, "hatch", 1)

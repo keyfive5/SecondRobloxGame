@@ -78,9 +78,10 @@ local function makeBillboard(adornee: BasePart, height: number)
 	local bb = Instance.new("BillboardGui")
 	bb.Name = "PadLabel"
 	bb.Adornee = adornee
-	bb.Size = UDim2.fromOffset(190, 74)
+	-- sized in studs so labels shrink with distance instead of piling up
+	bb.Size = UDim2.fromScale(7.5, 2.9)
 	bb.StudsOffsetWorldSpace = Vector3.new(0, height, 0)
-	bb.MaxDistance = 70
+	bb.MaxDistance = 60
 	bb.LightInfluence = 0
 	bb.ResetOnSpawn = false
 	bb.AlwaysOnTop = false
@@ -88,8 +89,8 @@ local function makeBillboard(adornee: BasePart, height: number)
 		local t = Instance.new("TextLabel")
 		t.Name = name
 		t.BackgroundTransparency = 1
-		t.Size = UDim2.new(1, 0, 0, h)
-		t.Position = UDim2.fromOffset(0, y)
+		t.Size = UDim2.fromScale(1, h)
+		t.Position = UDim2.fromScale(0, y)
 		t.Font = font or Enum.Font.FredokaOne
 		t.TextScaled = true
 		t.TextColor3 = color
@@ -101,9 +102,9 @@ local function makeBillboard(adornee: BasePart, height: number)
 		t.Parent = bb
 		return t
 	end
-	line("Title", 0, 22, Color3.new(1, 1, 1))
-	line("Rate", 22, 20, Color3.fromRGB(140, 255, 150))
-	line("Stored", 44, 28, Color3.fromRGB(255, 225, 90), Enum.Font.LuckiestGuy)
+	line("Title", 0, 0.3, Color3.new(1, 1, 1))
+	line("Rate", 0.3, 0.27, Color3.fromRGB(140, 255, 150))
+	line("Stored", 0.57, 0.43, Color3.fromRGB(255, 225, 90), Enum.Font.LuckiestGuy)
 	bb.Parent = adornee
 	return bb
 end

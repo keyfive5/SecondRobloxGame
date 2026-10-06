@@ -192,6 +192,7 @@ function CarryService.deliver(player: Player)
 			BaseService.placeEgg(player, { b = rec.b, r = rec.r, ready = rec.ready }, pad)
 		end
 		data.stats.steals += 1
+		Sync.set(player, "stats", data.stats)
 		local vdata = DataService.get(victim) and DataService.get(victim).data
 		if vdata then
 			vdata.stats.robbed += 1
@@ -208,6 +209,7 @@ function CarryService.deliver(player: Player)
 		clear(player, c)
 		BaseService.placeEgg(player, { b = c.b, r = c.r }, pad)
 		data.stats.eggs += 1
+		Sync.set(player, "stats", data.stats)
 		Signals.progress(player, "egg", 1)
 		Sync.notify(player, string.format("🥚 %s is incubating!", label(c)), "good")
 	end

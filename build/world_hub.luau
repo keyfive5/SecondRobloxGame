@@ -48,6 +48,11 @@ rays.Spread = 0.5
 rays.Parent = Lighting
 
 ---------------------------------------------------------------------------
+-- Streaming: the map is ~5,300 studs long, so only nearby parts load (default
+-- radii; they aren't scriptable). Bases, eggs and guardians stream atomically.
+workspace.StreamingEnabled = true
+
+---------------------------------------------------------------------------
 -- Clean slate
 ---------------------------------------------------------------------------
 for _, name in ipairs({ "Baseplate", "SpawnLocation", "Preview", "Solo", "EggPreview", "WingTest" }) do
@@ -297,6 +302,7 @@ for i = 1, Layout.BaseCount do
 	Terrain:FillBlock(cf * CFrame.new(0, -6, 0), Vector3.new(W + 6, 8, D + 6), Enum.Material.Ground)
 	local m = Instance.new("Model")
 	m.Name = "Base_" .. i
+	m.ModelStreamingMode = Enum.ModelStreamingMode.Atomic
 	m:SetAttribute("Slot", i)
 	m:SetAttribute("Color", color)
 	-- floor

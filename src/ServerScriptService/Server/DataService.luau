@@ -12,10 +12,36 @@ local Config = require(ReplicatedStorage.Shared.Config)
 local DataService = {}
 DataService.Profiles = {} :: { [Player]: any }
 
-local loadedEvent = Instance.new("BindableEvent")
-DataService.Loaded = loadedEvent.Event -- (player, profile)
-local releasingEvent = Instance.new("BindableEvent")
-DataService.Releasing = releasingEvent.Event -- (player, profile) just before the final save
+-- Plain Lua signals: BindableEvents deep-copy table arguments, which would hand
+-- every handler its own copy of the profile instead of the real one.
+local function signal()
+	local handlers = {}
+	local sig = {}
+	function sig:Connect(fn)
+		table.insert(handlers, fn)
+		return {
+			Disconnect = function()
+				local i = table.find(handlers, fn)
+				if i then
+					table.remove(handlers, i)
+				end
+			end,
+		}
+	end
+	-- Handlers run in connection order; each starts in its own thread so one that
+	-- yields (or errors) can't hold up the rest.
+	function sig:Fire(...)
+		for _, fn in ipairs(table.clone(handlers)) do
+			task.spawn(fn, ...)
+		end
+	end
+	return sig
+end
+
+local loadedEvent = signal()
+DataService.Loaded = loadedEvent -- (player, profile)
+local releasingEvent = signal()
+DataService.Releasing = releasingEvent -- (player, profile) just before the final save
 
 local LOCK_TIMEOUT = 15 * 60 -- a lock older than this is considered abandoned
 local store

@@ -81,10 +81,10 @@ end
 local function billboard(model: Model, text: string, color: Color3, height: number)
 	local bb = Instance.new("BillboardGui")
 	bb.Name = "Label"
-	bb.Size = UDim2.fromOffset(160, 40)
+	bb.Size = UDim2.fromScale(7, 1.3) -- studs, so far labels shrink
 	bb.StudsOffsetWorldSpace = Vector3.new(0, height, 0)
 	bb.AlwaysOnTop = false
-	bb.MaxDistance = 90
+	bb.MaxDistance = 120
 	bb.LightInfluence = 0
 	local t = Instance.new("TextLabel")
 	t.BackgroundTransparency = 1
@@ -181,6 +181,7 @@ function spawnEgg(biome: number, slot: number, rarity: string?)
 	local cf = Layout.nestEggCFrame(biome, slot, Config.EggsPerNest) * CFrame.Angles(0, rng:NextNumber(0, 6.28), rng:NextNumber(-0.12, 0.12))
 	local model = EggBuilder.build(biome, rarity, cf, { scale = 1.3 })
 	model.Name = "Egg_" .. biome .. "_" .. slot
+	model.ModelStreamingMode = Enum.ModelStreamingMode.Atomic
 	model:SetAttribute("Biome", biome)
 	model:SetAttribute("Rarity", rarity)
 	billboard(model, rarity .. " Egg", Rarity.color(rarity), 3.2)
@@ -216,6 +217,7 @@ function NestService.spawnSecret(biome: number?)
 	local cf = CFrame.new(0, Layout.Ground + 4.2, info.nestZ)
 	local model = EggBuilder.build(0, "Secret", cf, { scale = 1.8 })
 	model.Name = "SecretEgg"
+	model.ModelStreamingMode = Enum.ModelStreamingMode.Atomic
 	billboard(model, "❓ SECRET EGG ❓", Color3.fromRGB(255, 255, 255), 4.5)
 	eggPrompts(model, "Secret", function(player)
 		grabFromNest(player, biome, SECRET_SLOT)
@@ -237,6 +239,7 @@ local function groundEgg(b: number, r: string, zone: number, slot: number?, pos:
 	local y = ray and ray.Position.Y or pos.Y - 2.5
 	local model = EggBuilder.build(b, r, CFrame.new(pos.X, y + 1.6, pos.Z), { scale = 1.2 })
 	model.Name = "DroppedEgg"
+	model.ModelStreamingMode = Enum.ModelStreamingMode.Atomic
 	billboard(model, title or ("Dropped " .. (r == "Secret" and "SECRET" or r) .. " Egg!"), Rarity.color(r == "Secret" and "Legendary" or r), 3)
 	local entry = { b = b, r = r, zone = zone, slot = slot, expires = os.clock() + (life or Config.DroppedEggLife) }
 	groundEggs[model] = entry
@@ -308,6 +311,7 @@ local function buildGuardian(biome: number)
 	local s = guardScale(biome)
 	local model = DragonBuilder.build(guardianLook(biome), rest, { scale = s, angry = true, anchored = false })
 	model.Name = "Guardian_" .. biome
+	model.ModelStreamingMode = Enum.ModelStreamingMode.Atomic
 	model:SetAttribute("Biome", biome)
 	model:SetAttribute("Guardian", Biomes.List[biome].guardian)
 	local root = model.PrimaryPart
