@@ -12,7 +12,7 @@ Gear.Slaps = {
 
 Gear.Items = {
 	{ id = "speedcoil", name = "Speed Coil", icon = "🌀", price = 25000, desc = "+12 speed while held.", cooldown = 0 },
-	{ id = "gravity", name = "Gravity Coil", icon = "🎈", price = 90000, desc = "Moon jumps while held. Hop over base walls!", cooldown = 0 },
+	{ id = "gravity", name = "Gravity Coil", icon = "🎈", price = 90000, desc = "Moon jumps while held. Bounce over hills and away from thieves!", cooldown = 0 },
 	{ id = "trap", name = "Bear Trap", icon = "🪤", price = 300000, desc = "Place a trap. Thieves who step on it are stuck for 3s and drop what they carry.", cooldown = 30 },
 	{ id = "net", name = "Net Launcher", icon = "🕸️", price = 3e6, desc = "Fire a net that freezes a player for 2.5s.", cooldown = 12 },
 	{ id = "cloak", name = "Invisibility Cloak", icon = "👻", price = 25e6, desc = "Turn invisible for 8s. Guardians lose track of you!", cooldown = 45 },
